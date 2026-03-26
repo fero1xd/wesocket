@@ -1,0 +1,12 @@
+- I plan to turn this project into a small library later.
+
+- the server api will be removed later
+- essentialy I want to only provide an api to upgrade a http req
+
+session = wesocket_upgrade(&req);
+...
+session.feed(msg);
+msg = session.read(); #blocking
+
+session.write(...);
+session.destroy();

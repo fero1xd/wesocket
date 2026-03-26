@@ -1,24 +1,18 @@
-CC=clang
-CFLAGS = -Wall -Wextra -g
-SRC = main.c
-OBJ  = $(SRC:.c=.o)
+CC = clang
+CFLAGS = -Wall -Wextra -std=c23 -g
 BIN = bin
+TARGET = $(BIN)/main
+SRC = main.c
 
-.PHONY: all clean
-
-all: dirs build
+all: dirs $(TARGET)
 
 dirs:
-	mkdir -p ./$(BIN)
+	mkdir -p $(BIN)
 
-run: all
-	$(BIN)/main
-
-build: $(OBJ)
-	$(CC) -o $(BIN)/main $^ $(LDFLAGS)
-
-%.o: %.c
-	$(CC) -o $@ -c $< $(CFLAGS)
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
 
 clean:
-	rm -rf $(BIN) $(OBJ)
+	rm -rf $(BIN)
+
+.PHONY: all dirs clean
