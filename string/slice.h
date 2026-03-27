@@ -9,11 +9,10 @@ typedef struct {
   size_t len;
 } Slice;
 
-Slice to_cslice(size_t len, u8 ptr[len]);
+#define CREATE_NAMED_SLICE(type, name, ini)                                    \
+  __CREATE_NAMED_SLICE(type, name, ini)
 
-#define CREATE_NAMED_SLICE(type, name) __CREATE_NAMED_SLICE(type, name)
-
-#define __CREATE_NAMED_SLICE(type, name)                                       \
+#define __CREATE_NAMED_SLICE(type, name, ini)                                  \
   typedef struct {                                                             \
     type *ptr;                                                                 \
     size_t len;                                                                \
@@ -24,7 +23,17 @@ Slice to_cslice(size_t len, u8 ptr[len]);
   name name##_new(type *ptr) {                                                 \
     return (name){.ptr = ptr, .len = sizeof(*ptr)};                            \
   }                                                                            \
-  /* checks if element exists in the strip set */                              \
+  bool name##_is_null(name *slice) {                                           \
+    return slice->ptr == NULL && slice->len <= 0;                              \
+  }                                                                            \
+  name name##_slice(name slice[static 1], size_t start, size_t end) {          \
+    if (end > slice->len)                                                      \
+      end = slice->len;                                                        \
+    if (start > end)                                                           \
+      return ini;                                                              \
+                                                                               \
+    return name##_new_len(slice->ptr + start, end - start);                    \
+  }                                                                            \
   int name##_inStripSet(type c, name strip[static 1]) {                        \
     for (size_t i = 0; i < strip->len; i++) {                                  \
       if (strip->ptr[i] == c)                                                  \
@@ -87,6 +96,14 @@ Slice to_cslice(size_t len, u8 ptr[len]);
         return (ptrdiff_t)i;                                                   \
     }                                                                          \
     return -1;                                                                 \
+  }                                                                            \
+  name name##_split_mut(name slice[static 1], name seq[static 1]) {            \
+    ptrdiff_t index = name##_findSlice(slice, seq);                            \
+    if (index < 0)                                                             \
+      return name##_new_len(NULL, 0);                                          \
+    name result = name##_slice(slice, index + 1, slice->len);                  \
+    slice->len = (size_t)index;                                                \
+    return result;                                                             \
   }
 
 #define SLICE(name, p, l)                                                      \
@@ -95,5 +112,10 @@ Slice to_cslice(size_t len, u8 ptr[len]);
 #define SLICE_LIT(name, p, l) &SLICE(name, p, l)
 
 #define SLICE_FIND(type, name, haystack, needle)                               \
-  _Generic((needle), type: name##_findElem, name *: name##_findSlice)(haystack, needle)
+  _Generic((needle), type: name##_findElem, name *: name##_findSlice)(         \
+      haystack, needle)
 
+#define SLICE_SPLIT_MUT(name, slice, split_by, iter)                           \
+  for (name src = *(slice), other = name##_split_mut(&src, split_by);          \
+       src.ptr != NULL && (*(iter) = src, 1);                                  \
+       src = other, other = name##_split_mut(&src, split_by))

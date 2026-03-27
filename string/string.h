@@ -2,7 +2,7 @@
 
 #include "slice.h"
 
-CREATE_NAMED_SLICE(char, str);
+CREATE_NAMED_SLICE(char, str, ((str){.ptr = "", .len = 0}));
 
 #define STR(s) SLICE(str, s, strlen(s))
 #define STR_LIT(s) &STR(s)
@@ -11,3 +11,6 @@ CREATE_NAMED_SLICE(char, str);
 #define SV_Arg(s) (int)(s).len, (s).ptr
 
 #define STR_FIND(haystack, needle) SLICE_FIND(char, str, (haystack), (needle))
+
+#define STR_SPLIT_MUT_ITER(slice_var, delimiter, iter_var)                     \
+  SLICE_SPLIT_MUT(str, (slice_var), (delimiter), (iter_var))
