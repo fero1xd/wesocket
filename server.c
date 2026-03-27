@@ -45,7 +45,7 @@ void run_loop(weserver_t server[static 1]) {
         accept(server->fd, (struct sockaddr *)&client_addr, &addr_len);
     assert(sock >= 0);
 
-    weclient_t client = {.fd = sock};
+    weclient_t client = {.fd = sock, .handshake = false};
     printf("Connected client: %d\n", sock);
 
     // yes this server is only gonna handle 1 client :0

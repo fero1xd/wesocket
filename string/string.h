@@ -6,6 +6,7 @@ CREATE_NAMED_SLICE(char, str, ((str){.ptr = "", .len = 0}));
 
 #define STR(s) (SLICE(str, s, strlen(s)))
 #define STR_LIT(s) &STR(s)
+#define STR_WITH_LEN(s, l) SLICE_LIT(str, s, l)
 
 #define STR_BUF(n) &(str){.ptr = (char[n]){0}, .len = n}
 

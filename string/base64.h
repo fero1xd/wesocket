@@ -8,6 +8,7 @@
 #ifndef BASE46_H
 #define BASE46_H
 
+#include "../allocator/arena.h"
 #include <memory.h>
 #include <stdlib.h>
 
@@ -16,15 +17,15 @@ Encodes ASCCI string into base64 format string
 @param plain ASCII string to be encoded
 @return encoded base64 format string
 ***********************************************/
-char *base64_encode(const unsigned char *data, size_t input_length,
-                    size_t *output_length);
+char *base64_encode(Arena *arena, const unsigned char *data,
+                    size_t input_length, size_t *output_length);
 
 /***********************************************
 decodes base64 format string into ASCCI string
 @param plain encoded base64 format string
 @return ASCII string to be encoded
 ***********************************************/
-unsigned char *base64_decode(const char *data, size_t input_length,
-                             size_t *output_length);
+unsigned char *base64_decode(Arena *arena, const char *data,
+                             size_t input_length, size_t *output_length);
 
 #endif // BASE46_H

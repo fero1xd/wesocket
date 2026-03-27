@@ -4,6 +4,7 @@
 
 struct WeClient {
   socket_fd fd;
+  bool handshake;
 };
 
 typedef struct WeClient weclient_t;

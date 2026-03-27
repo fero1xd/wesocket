@@ -1,5 +1,6 @@
 #pragma once
 
+#include "allocator/arena.h"
 #include "string/string.h"
 
-void make_handshake_accept_key(str *ws_key, str *out);
+str make_handshake_accept_key(Arena *arena, str *ws_key);

@@ -2,6 +2,7 @@
 // Posted by ryyst, modified by community. See post 'Timeline' for change
 // history Retrieved 2026-03-27, License - CC BY-SA 3.0
 
+#include "base64.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -14,20 +15,21 @@ static char encoding_table[] = {
 static char *decoding_table = NULL;
 static int mod_table[] = {0, 2, 1};
 
-void build_decoding_table() {
+static Arena static_arena = {0};
 
-  decoding_table = malloc(256);
+void build_decoding_table(Arena *arena) {
+  decoding_table = arena_alloc(arena, 256);
 
   for (int i = 0; i < 64; i++)
     decoding_table[(unsigned char)encoding_table[i]] = i;
 }
 
-char *base64_encode(const unsigned char *data, size_t input_length,
-                    size_t *output_length) {
+char *base64_encode(Arena *arena, const unsigned char *data,
+                    size_t input_length, size_t *output_length) {
 
   *output_length = 4 * ((input_length + 2) / 3);
 
-  char *encoded_data = malloc(*output_length);
+  char *encoded_data = arena_alloc(arena, *output_length);
   if (encoded_data == NULL)
     return NULL;
 
@@ -51,11 +53,11 @@ char *base64_encode(const unsigned char *data, size_t input_length,
   return encoded_data;
 }
 
-unsigned char *base64_decode(const char *data, size_t input_length,
-                             size_t *output_length) {
+unsigned char *base64_decode(Arena *arena, const char *data,
+                             size_t input_length, size_t *output_length) {
 
   if (decoding_table == NULL)
-    build_decoding_table();
+    build_decoding_table(&static_arena);
 
   if (input_length % 4 != 0)
     return NULL;
@@ -66,7 +68,7 @@ unsigned char *base64_decode(const char *data, size_t input_length,
   if (data[input_length - 2] == '=')
     (*output_length)--;
 
-  unsigned char *decoded_data = malloc(*output_length);
+  unsigned char *decoded_data = arena_alloc(arena, *output_length);
   if (decoded_data == NULL)
     return NULL;
 
@@ -91,4 +93,4 @@ unsigned char *base64_decode(const char *data, size_t input_length,
   return decoded_data;
 }
 
-void base64_cleanup() { free(decoding_table); }
+void base64_cleanup() { arena_free(&static_arena); }
