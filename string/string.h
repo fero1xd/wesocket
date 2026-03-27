@@ -1,17 +1,13 @@
 #pragma once
 
-#include "../consts.h"
-#include <stddef.h>
+#include "slice.h"
 
-typedef struct {
-  u8 *ptr;
-  size_t len;
-} Slice;
+CREATE_NAMED_SLICE(char, str);
 
-Slice to_cslice(size_t len, u8 ptr[len]);
+#define STR(s) SLICE(str, s, strlen(s))
+#define STR_LIT(s) &STR(s)
 
-#define CREATE_NAMED_SLICE
+#define SV_Fmt "%.*s"
+#define SV_Arg(s) (int)(s).len, (s).ptr
 
-#ifdef SLICE_IMPL
-
-#endif // SLICE_IMPL
+#define STR_FIND(haystack, needle) SLICE_FIND(char, str, (haystack), (needle))
