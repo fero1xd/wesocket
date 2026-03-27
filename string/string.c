@@ -14,9 +14,9 @@ int main(void) {
   // iter = str_split(&trim, ",")
   // while(l = iter.next()) {...}
   //
-  //
+  // ini
   str iter;
-  STR_SPLIT_MUT_ITER(&trimmed, STR_LIT(" "), &iter) {
+  STR_SPLIT_MUT(&trimmed, STR_LIT(" "), &iter) {
     printf(SV_Fmt "\n", SV_Arg(iter));
   }
 }

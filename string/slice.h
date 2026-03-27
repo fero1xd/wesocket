@@ -23,14 +23,14 @@ typedef struct {
   name name##_new(type *ptr) {                                                 \
     return (name){.ptr = ptr, .len = sizeof(*ptr)};                            \
   }                                                                            \
-  bool name##_is_null(name *slice) {                                           \
+  bool name##_is_null(name slice[static 1]) {                                  \
     return slice->ptr == NULL && slice->len <= 0;                              \
   }                                                                            \
   name name##_slice(name slice[static 1], size_t start, size_t end) {          \
     if (end > slice->len)                                                      \
       end = slice->len;                                                        \
     if (start > end)                                                           \
-      return ini;                                                              \
+      return name##_new_len(NULL, 0);                                          \
                                                                                \
     return name##_new_len(slice->ptr + start, end - start);                    \
   }                                                                            \
@@ -117,5 +117,5 @@ typedef struct {
 
 #define SLICE_SPLIT_MUT(name, slice, split_by, iter)                           \
   for (name src = *(slice), other = name##_split_mut(&src, split_by);          \
-       src.ptr != NULL && (*(iter) = src, 1);                                  \
+       !name##_is_null(&src) && (*(iter) = src, 1);                            \
        src = other, other = name##_split_mut(&src, split_by))

@@ -9,9 +9,15 @@ void run_loop(weserver_t server[static 1]);
 
 void wesocket_run(weserver_t w) {
   printf("Running wesocket server on: %s:%d\n", w.config.addr, w.config.port);
+  int opt = 1;
 
   w.fd = socket(AF_INET, SOCK_STREAM, 0);
   assert(w.fd >= 0);
+
+  if (setsockopt(w.fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    perror("setsockopt failed");
+    return;
+  }
 
   printf("[+]TCP server socket created.\n");
 

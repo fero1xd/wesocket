@@ -4,3 +4,4 @@ CompileFlags:
     - -std=c23
     - -Wall
     - -Wextra
+    - -I/opt/homebrew/Cellar/openssl@3/3.6.1/include
