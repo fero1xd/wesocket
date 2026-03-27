@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ints.h"
+#include "consts.h"
 
 struct WeConfig {
   u16 port;
@@ -8,8 +8,6 @@ struct WeConfig {
 };
 
 typedef struct WeConfig weconfig_t;
-
-typedef int socket_fd;
 
 struct WeServer {
   weconfig_t config;
