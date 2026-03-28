@@ -1,7 +1,6 @@
 #include "string.h"
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 
 int main(void) {
   str base = STR("  hello world\r\n");

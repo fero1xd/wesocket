@@ -5,7 +5,6 @@
 #include <openssl/sha.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <string.h>
 
 #define MAGIC_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 #define MAGIC_KEY_LENGTH 36

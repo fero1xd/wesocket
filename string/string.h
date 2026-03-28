@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slice.h"
+#include <string.h>
 
 CREATE_NAMED_SLICE(char, str, ((str){.ptr = "", .len = 0}));
 
