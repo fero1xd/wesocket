@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../consts.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -33,6 +34,9 @@ typedef struct {
       return name##_new_len(NULL, 0);                                          \
                                                                                \
     return name##_new_len(slice->ptr + start, end - start);                    \
+  }                                                                            \
+  name name##_slice_def(name slice[static 1], size_t start) {                  \
+    return name##_slice(slice, start, slice->len);                             \
   }                                                                            \
   int name##_inStripSet(type c, name strip[static 1]) {                        \
     for (size_t i = 0; i < strip->len; i++) {                                  \
@@ -104,6 +108,17 @@ typedef struct {
     name result = name##_slice(slice, index + 1, slice->len);                  \
     slice->len = (size_t)index;                                                \
     return result;                                                             \
+  }                                                                            \
+  name name##_copy(name dest[static 1], name src[static 1], size_t len) {      \
+    assert(dest->len >= len);                                                  \
+    assert(src->len >= len);                                                   \
+    type *d = dest->ptr;                                                       \
+    type *s = src->ptr;                                                        \
+    bool overlaps = (d < s + (ptrdiff_t)len) && (s < d + (ptrdiff_t)len);      \
+    assert(!overlaps || d <= s);                                               \
+    for (size_t i = 0; i < len; i++)                                           \
+      d[i] = s[i];                                                             \
+    return name##_new_len(dest->ptr, len);                                     \
   }
 
 #define SLICE(name, p, l)                                                      \
@@ -114,6 +129,10 @@ typedef struct {
 #define SLICE_FIND(type, name, haystack, needle)                               \
   _Generic((needle), type: name##_findElem, name *: name##_findSlice)(         \
       haystack, needle)
+
+#define GET_MACRO(_1, _2, _3, NAME, ...) NAME
+#define SLICE_SLICE(name, ...)                                                 \
+  GET_MACRO(__VA_ARGS__, name##_slice, name##_slice_def, )(__VA_ARGS__)
 
 #define SLICE_SPLIT_MUT(name, slice, split_by, iter)                           \
   for (name src = *(slice), other = name##_split_mut(&src, split_by);          \

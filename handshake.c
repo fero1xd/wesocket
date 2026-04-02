@@ -23,5 +23,5 @@ str make_handshake_accept_key(Arena *arena, str *ws_key) {
   char *encoded =
       base64_encode(arena, (unsigned char *)hash->ptr, hash->len, &output_len);
 
-  return *STR_WITH_LEN(encoded, output_len);
+  return STR_WITH_LEN(encoded, output_len);
 }
