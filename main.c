@@ -4,6 +4,7 @@
 #include "client.c"
 #include "data_frame.c"
 #include "handshake.c"
+#include "message.c"
 #include "server.c"
 #include "string/base64.c"
 

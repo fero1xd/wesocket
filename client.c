@@ -1,7 +1,7 @@
 #include "client.h"
 #include "allocator/arena.h"
-#include "data_frame.h"
 #include "handshake.h"
+#include "message.h"
 #include "string/string.h"
 #include "unistd.h"
 #include <assert.h>
@@ -15,14 +15,17 @@ bool weclient_run(weclient_t client) {
   u8 buf[BUFFER_SIZE];
   Arena arena = {0};
   Arena frame_arena = {0};
-  data_frame_t *f = data_frame_new(&frame_arena);
+
   int read_offset = 0;
+  message_t m = new_message();
 
   while (true) {
     if (!client.handshake)
       memset(buf, 0, BUFFER_SIZE);
+
     assert(read_offset < BUFFER_SIZE);
-    int n = read(client.fd, buf + read_offset, BUFFER_SIZE - read_offset);
+    int n = read(client.fd, buf + read_offset, (BUFFER_SIZE - read_offset));
+
     if (n == 0) {
       printf("EOF client: %d\n", client.fd);
       arena_free(&arena);
@@ -32,17 +35,18 @@ bool weclient_run(weclient_t client) {
     if (n < 0)
       break;
 
-    str *slice = STR_WITH_LEN_LIT((char *)buf, n);
+    read_offset += n;
+    str slice = STR_WITH_LEN((char *)buf, read_offset);
 
     if (!client.handshake) {
-      ptrdiff_t index = STR_FIND(slice, STR_LIT("Sec-WebSocket-Key: "));
+      ptrdiff_t index = STR_FIND(&slice, STR_LIT("Sec-WebSocket-Key: "));
       if (index == -1) {
         printf("websocket key not found\n");
         break;
       }
 
-      str line = str_slice(slice, index, slice->len);
-      line = str_slice(&line, 0, STR_FIND(&line, STR_LIT("\r\n")));
+      str line = STR_SLICE(&slice, index);
+      line = STR_SLICE(&line, 0, STR_FIND(&line, STR_LIT("\r\n")));
       line = str_trim(&line, STR_LIT(" "));
       assert(line.len > 0);
 
@@ -64,34 +68,39 @@ bool weclient_run(weclient_t client) {
       printf("Written: %ld\n", res->len);
 
       client.handshake = true;
+      read_offset -= n;
     } else {
-      read_offset += n;
-      printf("Read: %ld bytes\n", slice->len);
-
-      if (f->state == DONE) {
-        f = data_frame_new(&frame_arena);
+      printf("Read: %ld bytes\n", slice.len);
+      if (m.done) {
+        m = new_message();
       }
 
-      str *slice = STR_WITH_LEN_LIT((char *)buf, read_offset);
-      size_t read = parse_data_frame(&frame_arena, f, slice);
+      size_t read = -1;
+      while (!m.done && slice.len > 0 && read != 0) {
+        read = parse_message(&frame_arena, &m, &slice);
+        printf("Read: %ld bytes as message, state: %d\n", read,
+               m.current_frame->state);
 
-      if (read > 0) {
-        memmove(buf, buf + read, read_offset - read);
-        read_offset -= read;
-      }
+        if (read > 0) {
+          memmove(buf, buf + read, read_offset - read);
+          read_offset -= read;
+          slice = STR_SLICE(&slice, read);
+        }
 
-      printf("Read: %ld bytes as packet, status: %d\n", read, f->state);
+        if (m.pending_control_frame && m.current_frame->state == DONE) {
+          printf("Pending control frame: %x\n",
+                 m.current_frame->header->opcode);
+          printf("Data length: %lld\n\n", m.current_frame->bytes_read);
+        }
 
-      if (f->state == DONE && f->header->fin) {
-        printf("Fin: %d\n", f->header->fin);
-        printf("len: %d\n", f->header->payload_len);
-        printf("ex_len: %lld\n", f->header->extended_payload_len);
-        printf("read: %lld\n", f->bytes_read);
-        printf("Received: %.*s\n", (int)f->header->payload_len,
-               (char *)f->payload);
+        if (m.done) {
+          printf("read_offset: %d, bytes_read: %ld\n", read_offset,
+                 m.bytes_read);
+          printf("Received: %.*s\n", (int)m.payload.len, (char *)m.payload.ptr);
 
-        arena_free(&frame_arena);
-        f = data_frame_new(&frame_arena);
+          read_offset = 0;
+          arena_free(&frame_arena);
+        }
       }
     }
   }

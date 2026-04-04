@@ -3,6 +3,7 @@
 #include "allocator/arena.h"
 #include "consts.h"
 #include "string/string.h"
+#include <stdint.h>
 
 typedef enum {
   READING_HEADER,
@@ -13,9 +14,17 @@ typedef enum {
   DONE
 } frame_state_t;
 
+typedef enum {
+  TEXT = 0x1,
+  BINARY = 0x2,
+  CONTINUATION = 0x0,
+  PING = 0x9,
+  PONG = 0xA
+} opcode_t;
+
 struct DataFrameHeader {
   bool fin;
-  u8 opcode;
+  opcode_t opcode;
   bool mask;
 
   u8 payload_len;
@@ -31,10 +40,17 @@ struct DataFrame {
   data_frame_header_t *header;
 
   u64 bytes_read;
-  void *payload;
 };
 
 typedef struct DataFrame data_frame_t;
 
 data_frame_t *data_frame_new(Arena *arena);
-size_t parse_data_frame(Arena *arena, data_frame_t *frame, str *buf);
+// NOTE: frame->payload_start is only valid till the liftime of the passed in
+// buf.ptr, to use it further than that copy the contents to another buffer.
+size_t parse_data_frame_header(data_frame_t *frame, str *buf);
+size_t parse_data_frame_payload(data_frame_t *frame, str *buf, str *out_buffer);
+
+#define PAYLOAD_LEN(f)                                                         \
+  (f->payload_len <= 125 ? f->payload_len : f->extended_payload_len)
+
+#define IS_CONTROL_FRAME(opcode) ((opcode) >= 0x8)
