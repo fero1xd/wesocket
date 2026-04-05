@@ -20,7 +20,7 @@ message_t new_message() {
 }
 
 size_t parse_message(Arena *a, message_t *message, str *buf) {
-  assert(message != nullptr);
+  assert(message != NULL);
   assert(!message->done);
 
   if (message->current_frame == NULL || message->current_frame->state == DONE) {
@@ -53,7 +53,13 @@ size_t parse_message(Arena *a, message_t *message, str *buf) {
         if (message->frames == 0) {
           message->opcode = frame->header->opcode;
         } else {
-          assert(message->opcode == CONTINUATION);
+          assert(frame->header->opcode == CONTINUATION);
+
+          size_t new_sz = message->payload.len + PAYLOAD_LEN(frame->header);
+          message->payload =
+              STR_WITH_LEN(arena_realloc(a, message->payload.ptr,
+                                         message->payload.len, new_sz),
+                           new_sz);
           break;
         }
 
