@@ -5,6 +5,11 @@
 #include "string/string.h"
 #include <stdint.h>
 
+#define FIN_MASK 0x80
+#define OP_MASK 0x0F
+#define MASKING_MASK 0x80
+#define PAYLOAD_LEN_MASK 0x7F
+
 typedef enum {
   READING_HEADER,
   READING_PAYLOAD_SIZE,

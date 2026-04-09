@@ -20,8 +20,13 @@ message_t new_message() {
 }
 
 size_t parse_message(Arena *a, message_t *message, str *buf) {
-  assert(message != NULL);
-  assert(!message->done);
+  assert(message != nullptr);
+  if (buf->len == 0)
+    return 0;
+
+  if (message->done) {
+    *message = new_message();
+  }
 
   if (message->current_frame == NULL || message->current_frame->state == DONE) {
     message->current_frame = data_frame_new(a);
@@ -60,7 +65,7 @@ size_t parse_message(Arena *a, message_t *message, str *buf) {
               STR_WITH_LEN(arena_realloc(a, message->payload.ptr,
                                          message->payload.len, new_sz),
                            new_sz);
-          break;
+          continue;
         }
 
         size_t payload_size = PAYLOAD_LEN(frame->header);
@@ -80,6 +85,11 @@ size_t parse_message(Arena *a, message_t *message, str *buf) {
           message->frames++;
           message->bytes_read += frame->bytes_read;
           message->done = frame->header->fin;
+
+          if (!message->done) {
+            message->current_frame = data_frame_new(a);
+            frame = message->current_frame;
+          }
         }
       }
     }

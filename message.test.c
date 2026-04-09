@@ -1,5 +1,6 @@
 #include "message.h"
 #include "data_frame.h"
+#include <assert.h>
 
 #define ARENA_IMPLEMENTATION
 #include "allocator/arena.h"
@@ -30,6 +31,21 @@ int main(void) {
       104,
       110,
 
+      0b10001001,
+      // MASK=1, payload length=5
+      0b10000101,
+      // 4-byte mask
+      1,
+      2,
+      3,
+      4,
+      // 5-byte payload
+      118,
+      109,
+      113,
+      104,
+      101,
+
       // FIN=0, RSV1-3=0, opcode=0x1 (text)
       0b00000000,
       // MASK=1, payload length=5
@@ -59,13 +75,30 @@ int main(void) {
       101,
   };
 
-  str slice = STR_WITH_LEN((char *)packet, sizeof(packet));
+  size_t data_len = sizeof(packet);
   message_t message = new_message();
+  str slice = STR_WITH_LEN((char *)packet, sizeof(packet));
 
-  while (!message.done && !message.pending_control_frame) {
+  while (!message.done || slice.len > 0) {
     size_t read = parse_message(ctx, &message, &slice);
     if (read == 0)
       break;
+
+    printf("Read: %ld, Total: %ld\n", read, data_len);
+
+    if (message.pending_control_frame) {
+      printf("control opcode: %d\n", GET_OPCODE(message));
+      printf("size: %lld\n", message.current_frame->bytes_read);
+    }
+
+    if (message.done) {
+      printf("opcode: %d\n", GET_OPCODE(message));
+      printf("frame count: %ld\n", message.frames);
+      printf("payload length: %ld\n", GET_PAYLOAD_LEN(message));
+      printf("Payload: %.*s\n", (int)message.payload.len,
+             (char *)message.payload.ptr);
+    }
+    printf("\n");
 
     slice = STR_SLICE(&slice, read);
   }
@@ -74,12 +107,6 @@ int main(void) {
     printf("Not enough data to parse a packet\n");
     return 1;
   }
-
-  printf("opcode: %d\n", GET_OPCODE(message));
-  printf("frame count: %ld\n", message.frames);
-  printf("payload length: %ld\n", GET_PAYLOAD_LEN(message));
-  printf("Payload: %.*s\n", (int)message.payload.len,
-         (char *)message.payload.ptr);
 
   arena_free(ctx);
   return 0;

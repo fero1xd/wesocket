@@ -38,8 +38,8 @@ size_t parse_data_frame_header(data_frame_t *frame, str *buf) {
     case READING_HEADER:
       if (msg.len < MIN_HEADER_SIZE)
         break;
-      h->fin = (msg.ptr[0] >> 7) & 0x01;
-      h->opcode = msg.ptr[0] & 0x0F;
+      h->fin = msg.ptr[0] & FIN_MASK;
+      h->opcode = msg.ptr[0] & OP_MASK;
       msg = STR_SLICE(&msg, MIN_HEADER_SIZE);
       frame->state = READING_PAYLOAD_SIZE;
       break;
@@ -48,8 +48,8 @@ size_t parse_data_frame_header(data_frame_t *frame, str *buf) {
       if (msg.len < MIN_PAYLOAD_LEN_SIZE)
         break;
 
-      h->mask = (msg.ptr[0] >> 7) & 0x01;
-      h->payload_len = msg.ptr[0] & 0x7F;
+      h->mask = msg.ptr[0] & MASKING_MASK;
+      h->payload_len = msg.ptr[0] & PAYLOAD_LEN_MASK;
       msg = STR_SLICE(&msg, MIN_PAYLOAD_LEN_SIZE);
 
       if (h->payload_len > 125) {
@@ -58,8 +58,6 @@ size_t parse_data_frame_header(data_frame_t *frame, str *buf) {
       }
 
       frame->state = h->mask ? READING_MASK : READING_PAYLOAD;
-      // frame->payload = arena_alloc(arena, h->payload_len);
-      // memset(frame->payload, 0, h->payload_len);
       break;
 
     case READING_EXTENDED_PAYLOAD_SIZE:
@@ -69,12 +67,9 @@ size_t parse_data_frame_header(data_frame_t *frame, str *buf) {
 
       memcpy(&h->extended_payload_len, msg.ptr, bytes_to_read);
       msg = STR_SLICE(&msg, bytes_to_read);
-
       h->extended_payload_len = NTOH(bytes_to_read, h->extended_payload_len);
-      // frame->payload = arena_alloc(arena, h->extended_payload_len);
-      // memset(frame->payload, 0, h->extended_payload_len);
-
       frame->state = h->mask ? READING_MASK : READING_PAYLOAD;
+
       break;
     case READING_MASK:
       if (msg.len < MASK_KEY_SIZE)

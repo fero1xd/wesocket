@@ -5,7 +5,6 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{ .name = "main", .root_module = b.createModule(.{ .target = target, .optimize = optimize }) });
-
     exe.root_module.addCSourceFiles(.{ .files = &.{
         "main.c",
     }, .flags = &.{ "-Wall", "-Wextra", "-std=c23", "-xc" } });
@@ -15,6 +14,7 @@ pub fn build(b: *std.Build) void {
 
     exe.root_module.linkSystemLibrary("ssl", .{});
     exe.root_module.linkSystemLibrary("crypto", .{});
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
