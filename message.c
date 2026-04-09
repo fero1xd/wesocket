@@ -6,26 +6,13 @@
 
 #define MIN_PAYLOAD_LEN 125
 
-message_t new_message() {
-  return (message_t){
-      .frames = 0,
-      .done = false,
-      .opcode = 0,
-      .payload = STR_NULL(),
-      .current_frame = NULL,
-      .bytes_read = 0,
-      .control_payload = STR_NULL(),
-      .pending_control_frame = false,
-  };
-}
-
 size_t parse_message(Arena *a, message_t *message, str *buf) {
   assert(message != nullptr);
   if (buf->len == 0)
     return 0;
 
   if (message->done) {
-    *message = new_message();
+    *message = (message_t){0};
   }
 
   if (message->current_frame == NULL || message->current_frame->state == DONE) {
@@ -49,9 +36,7 @@ size_t parse_message(Arena *a, message_t *message, str *buf) {
           assert(PAYLOAD_LEN(frame->header) <= 125);
 
           message->pending_control_frame = true;
-          message->control_payload =
-              STR_WITH_LEN(arena_alloc(a, PAYLOAD_LEN(frame->header)),
-                           PAYLOAD_LEN(frame->header));
+          message->control_payload = *STR_BUF_A(a, PAYLOAD_LEN(frame->header));
           continue;
         }
 
@@ -69,8 +54,7 @@ size_t parse_message(Arena *a, message_t *message, str *buf) {
         }
 
         size_t payload_size = PAYLOAD_LEN(frame->header);
-        message->payload =
-            STR_WITH_LEN(arena_alloc(a, payload_size), payload_size);
+        message->payload = *STR_BUF_A(a, payload_size);
       }
     } else if (frame->state == READING_PAYLOAD) {
       if (message->pending_control_frame) {

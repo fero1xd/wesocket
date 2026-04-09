@@ -73,10 +73,38 @@ int main(void) {
       113,
       104,
       101,
+
+      // FIN=0, RSV1-3=0, opcode=0x1 (cont)
+      0b00000001,
+      // MASK=1, payload length=5
+      0b10000101,
+      // 4-byte mask
+      1,
+      2,
+      3,
+      4,
+      // 5-byte payload
+      118,
+      109,
+      113,
+      104,
+      101,
+
+      // FIN=0, RSV1-3=0, opcode=0x1 (cont)
+      0b10000000,
+      // MASK=1, payload length=5
+      0b10000001,
+      // 4-byte mask
+      1,
+      2,
+      3,
+      4,
+      // 5-byte payload
+      118,
   };
 
   size_t data_len = sizeof(packet);
-  message_t message = new_message();
+  message_t message = {0};
   str slice = STR_WITH_LEN((char *)packet, sizeof(packet));
 
   while (!message.done || slice.len > 0) {

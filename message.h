@@ -31,8 +31,6 @@ struct Message {
 
 typedef struct Message message_t;
 
-message_t new_message();
-
 // - parses data frame one by 1
 // - .done property is true if its parsed all fragments of a message
 // - .pending_control_frame is true when there is a control frame available to

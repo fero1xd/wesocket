@@ -5,10 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MIN_HEADER_SIZE 1
-#define MIN_PAYLOAD_LEN_SIZE 1
-#define MASK_KEY_SIZE 4
-
 #define DIFF(a, b) (b.ptr - a->ptr)
 #define MIN(a, b) (a > b ? b : a)
 #define NTOH(n, p) ((n) == 2 ? ntohs(p) : ntohll(p))
@@ -109,12 +105,11 @@ size_t parse_data_frame_payload(data_frame_t *frame, str *buf,
       }
 
       u64 take = MIN(n, msg.len);
-      u8 *dest = (u8 *)out_buffer->ptr + frame->bytes_read;
-      u8 *src = (u8 *)msg.ptr;
+      str out = STR_SLICE(out_buffer, frame->bytes_read);
 
-      for (u64 i = 0; i < take; i++) {
-        dest[i] = src[i] ^ h->masking_key[(frame->bytes_read + i) % 4];
-      }
+      str dest = STR_SLICE(&out, 0, take);
+      str src = STR_SLICE(&msg, 0, take);
+      mask_frame_payload(&src, h->masking_key, &dest);
 
       frame->bytes_read += take;
 
@@ -134,4 +129,15 @@ size_t parse_data_frame_payload(data_frame_t *frame, str *buf,
   } while (prev_state != frame->state && (prev_state = frame->state, 1));
 
   return DIFF(buf, msg);
+}
+
+void mask_frame_payload(str *raw, u8 mask[static 4], str *out) {
+  assert(raw->len == out->len);
+
+  u8 *src = (u8 *)raw->ptr;
+  u8 *dest = (u8 *)out->ptr;
+
+  for (size_t i = 0; i < raw->len; i++) {
+    dest[i] = ((u8)src[i]) ^ mask[i % 4];
+  }
 }

@@ -10,6 +10,17 @@
 #define MASKING_MASK 0x80
 #define PAYLOAD_LEN_MASK 0x7F
 
+#define MIN_HEADER_SIZE 1
+#define MIN_PAYLOAD_LEN_SIZE 1
+#define MASK_KEY_SIZE 4
+
+#define HEADER_SIZE 2
+
+#define PAYLOAD_LEN(f)                                                         \
+  (f->payload_len <= 125 ? f->payload_len : f->extended_payload_len)
+
+#define IS_CONTROL_FRAME(opcode) ((opcode) >= 0x8)
+
 typedef enum {
   READING_HEADER,
   READING_PAYLOAD_SIZE,
@@ -55,7 +66,4 @@ data_frame_t *data_frame_new(Arena *arena);
 size_t parse_data_frame_header(data_frame_t *frame, str *buf);
 size_t parse_data_frame_payload(data_frame_t *frame, str *buf, str *out_buffer);
 
-#define PAYLOAD_LEN(f)                                                         \
-  (f->payload_len <= 125 ? f->payload_len : f->extended_payload_len)
-
-#define IS_CONTROL_FRAME(opcode) ((opcode) >= 0x8)
+void mask_frame_payload(str *raw, u8 mask[static 4], str *out);

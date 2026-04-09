@@ -17,7 +17,7 @@ bool weclient_run(weclient_t client) {
   Arena frame_arena = {0};
 
   int read_offset = 0;
-  message_t m = new_message();
+  message_t m = {0};
 
   while (true) {
     if (!client.handshake)
@@ -72,20 +72,20 @@ bool weclient_run(weclient_t client) {
     } else {
       printf("Read: %ld bytes\n", slice.len);
       if (m.done) {
-        m = new_message();
+        m = (message_t){0};
       }
 
-      size_t read = -1;
-      while (!m.done && slice.len > 0 && read != 0) {
-        read = parse_message(&frame_arena, &m, &slice);
+      while (!m.done || slice.len > 0) {
+        size_t read = parse_message(&frame_arena, &m, &slice);
+        if (read == 0)
+          break;
+
         printf("Read: %ld bytes as message, state: %d\n", read,
                m.current_frame->state);
 
-        if (read > 0) {
-          memmove(buf, buf + read, read_offset - read);
-          read_offset -= read;
-          slice = STR_SLICE(&slice, read);
-        }
+        memmove(buf, buf + read, read_offset - read);
+        read_offset -= read;
+        slice = STR_SLICE(&slice, read);
 
         if (m.pending_control_frame && m.current_frame->state == DONE) {
           printf("Pending control frame: %x\n",
